@@ -19,11 +19,24 @@ import java.time.LocalDateTime;
 public class UserLikeServiceImpl implements UserLikeService {
     private final UserLikeRepository userLikeRepository;
 
+    /** 공통 입력값 검증 메서드 */
+    private void validateInput(Long userId, Long postId) {
+        if (userId == null || postId == null) {
+            log.error("❌ User ID 또는 Post ID는 null일 수 없습니다.");
+            throw new IllegalArgumentException("❌ User ID 또는 Post ID는 null일 수 없습니다.");
+        }
+    }
+
     /** 좋아요 등록 */
     @Override
     @Transactional
     public UserLikeDto addLike(Long userId, Long postId) {
         validateInput(userId, postId);
+
+        if (userLikeRepository.findByUserIdAndPostId(userId, postId).isPresent()) {
+            log.warn("❌ 중복 좋아요 등록 시도 - userId: {}, postId: {}", userId, postId);
+            throw new IllegalStateException("🚀 중복 좋아요 등록 시도 - userId: " + userId + ", postId: " + postId);
+        }
 
         UserLike userLike = UserLike.builder()
                 .user(User.builder().id(userId).build())
@@ -68,11 +81,4 @@ public class UserLikeServiceImpl implements UserLikeService {
         return likeCount != null ? likeCount : 0L;
     }
 
-    /** 공통 입력값 검증 메서드 */
-    private void validateInput(Long userId, Long postId) {
-        if (userId == null || postId == null) {
-            log.error("❌ User ID 또는 Post ID는 null일 수 없습니다.");
-            throw new IllegalArgumentException("❌ User ID 또는 Post ID는 null일 수 없습니다.");
-        }
-    }
 }
